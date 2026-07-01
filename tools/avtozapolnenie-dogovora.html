@@ -445,6 +445,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.11.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/petrovich@0.2.1/dist/petrovich.min.js"></script>
 
 <script>
 (function(){
@@ -483,7 +484,8 @@
     {key:"КОРР_СЧЕТ", group:"Контрагент", label:"Корр. счёт"},
     {key:"БИК", group:"Контрагент"},
 
-    {key:"ФИО_ПОДПИСАНТА", group:"Подписант"},
+    {key:"ФИО_ПОДПИСАНТА", group:"Подписант", label:"ФИО, именительный падеж (кто?)"},
+    {key:"ФИО_ПОДПИСАНТА_РОД", group:"Подписант", label:"ФИО, родительный падеж — «в лице кого?»"},
     {key:"ДОЛЖНОСТЬ_ПОДПИСАНТА", group:"Подписант"},
     {key:"ОСНОВАНИЕ_ПОДПИСАНТА", group:"Подписант", label:"Основание (Устав / Доверенность №… от …)"},
 
@@ -695,6 +697,21 @@
     return (m[1] || "").trim().replace(/\s+/g," ").replace(/[,;]$/,"");
   }
 
+  // склоняет "Фамилия Имя Отчество" в родительный падеж ("в лице кого?") через библиотеку petrovich;
+  // при сбое (необычное ФИО, нет отчества) возвращает исходную строку как есть
+  function declineGenitive(fio){
+    var parts = fio.trim().split(/\s+/);
+    if(parts.length < 2) return fio;
+    try{
+      var person = {last: parts[0], first: parts[1]};
+      if(parts[2]) person.middle = parts[2]; else person.gender = "androgynous";
+      var res = window.petrovich(person, "genitive");
+      return [res.last, res.first, res.middle].filter(Boolean).join(" ");
+    } catch(e){
+      return fio;
+    }
+  }
+
   function extractFields(corpus){
     var out = {};
 
@@ -750,7 +767,14 @@
       out.ДОЛЖНОСТЬ_ПОДПИСАНТА = "";
       out.ФИО_ПОДПИСАНТА = "";
     }
+    out.ФИО_ПОДПИСАНТА_РОД = out.ФИО_ПОДПИСАНТА ? declineGenitive(out.ФИО_ПОДПИСАНТА) : "";
+
     out.ОСНОВАНИЕ_ПОДПИСАНТА = grab(new RegExp("действ" + CYR + "\\s+на\\s+основании\\s+([^\\n,.;]{3,100})", "i"), corpus);
+    // директор/главврач подписывает по уставу, если в документах не указано иное (доверенность и т.п.) —
+    // представители по доверенности всегда попадают в список выше через явную фразу "действует на основании"
+    if(!out.ОСНОВАНИЕ_ПОДПИСАНТА && /директор|врач/i.test(out.ДОЛЖНОСТЬ_ПОДПИСАНТА)){
+      out.ОСНОВАНИЕ_ПОДПИСАНТА = "Устава";
+    }
 
     // официальная выписка Росздравнадзора пишет "Регистрационный номер лицензии: X" без символа "№" —
     // без этого варианта регулярка ниже случайно цепляла номер приказа о переоформлении из другого пункта
