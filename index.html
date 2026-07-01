@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Сверка адресов ЛПУ</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title>Инструменты</title>
 <style>
 :root{
   --ink:#16211b; --paper:#f3f1ea; --surface:#ffffff; --surface-2:#faf9f4;
   --primary:#1f6e43; --primary-deep:#164d30; --primary-tint:#e7f0ea;
   --amber:#b9772a; --amber-tint:#f6ecdc; --rust:#a83d2b; --rust-tint:#f4e3df;
+  --slate:#3d5a72; --slate-tint:#e6edf1;
   --line:#e0dccf; --line-strong:#c9c4b4; --muted:#6c6a5e;
   --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Consolas,monospace;
   --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -21,8 +21,8 @@ body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-heigh
 .wrap{max-width:1080px;margin:0 auto;padding:48px 24px 96px}
 @media(max-width:640px){.wrap{padding:28px 16px 64px}}
 
-/* header */
-.masthead{display:flex;align-items:flex-start;gap:18px;border-bottom:2px solid var(--ink);padding-bottom:22px;margin-bottom:8px}
+/* masthead — same identity as the tools themselves */
+.masthead{display:flex;align-items:flex-start;gap:18px;border-bottom:2px solid var(--ink);padding-bottom:22px;margin-bottom:30px}
 .mark{flex:none;width:52px;height:52px;border-radius:13px;background:var(--primary);position:relative;
   box-shadow:0 2px 0 var(--primary-deep)}
 .mark::before,.mark::after{content:"";position:absolute;background:var(--paper)}
@@ -33,627 +33,144 @@ h1{font-size:27px;letter-spacing:-.02em;font-weight:680;line-height:1.1}
 .masthead p{color:var(--muted);font-size:14.5px;margin-top:5px;max-width:60ch}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--primary);font-weight:600;margin-bottom:9px}
 
-/* step */
-.step{margin-top:38px}
-.step-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
-.step-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--surface);background:var(--ink);
-  width:23px;height:23px;border-radius:6px;display:grid;place-items:center;flex:none;translate:0 3px}
-.step-head h2{font-size:18px;font-weight:640;letter-spacing:-.01em}
-.step-head span{color:var(--muted);font-size:13.5px}
+/* toolbar: search + count */
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:220px;max-width:360px}
+.search-wrap svg{position:absolute;left:12px;top:50%;translate:0 -50%;width:15px;height:15px;color:var(--muted);pointer-events:none}
+#search{width:100%;font-family:var(--sans);font-size:13.5px;padding:10px 12px 10px 34px;
+  border:1.5px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--ink)}
+#search:focus{outline:2px solid var(--primary);outline-offset:1px}
+.count{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.02em;white-space:nowrap}
 
-/* upload */
-.uploads{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-@media(max-width:720px){.uploads{grid-template-columns:1fr}}
-.drop{background:var(--surface);border:1.5px solid var(--line-strong);border-radius:16px;padding:22px;
-  position:relative;transition:border-color .15s,background .15s}
-.drop[data-role=base]{border-top:4px solid var(--primary)}
-.drop[data-role=incoming]{border-top:4px solid var(--amber)}
-.drop.drag{border-color:var(--primary);background:var(--surface-2)}
-.drop.loaded{background:var(--surface-2)}
-.drop h3{font-size:14.5px;font-weight:640;display:flex;align-items:center;gap:8px}
-.tag{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:5px;font-weight:600}
-.tag.base{background:var(--primary-tint);color:var(--primary-deep)}
-.tag.inc{background:var(--amber-tint);color:var(--amber)}
-.drop>.hint{color:var(--muted);font-size:12.5px;margin:5px 0 15px}
-.filezone{border:1.5px dashed var(--line-strong);border-radius:11px;padding:20px 14px;text-align:center;cursor:pointer;
-  transition:border-color .15s,background .15s}
-.filezone:hover{border-color:var(--primary);background:var(--primary-tint)}
-.filezone svg{width:26px;height:26px;color:var(--muted);margin-bottom:6px}
-.filezone b{color:var(--primary-deep);font-weight:600}
-.filezone .fz-sub{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
-.fileinfo{display:none;margin-top:2px}
-.drop.loaded .filezone{display:none}
-.drop.loaded .fileinfo{display:block}
-.fileinfo .fname{font-family:var(--mono);font-size:12.5px;font-weight:600;word-break:break-all;display:flex;gap:8px;align-items:center}
-.fileinfo .fmeta{color:var(--muted);font-size:12px;margin-top:3px}
-.relink{background:none;border:none;color:var(--primary);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;margin-top:8px;font-family:var(--sans)}
-.field{margin-top:14px}
-.field label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-bottom:5px;
-  font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase}
-select{width:100%;font-family:var(--sans);font-size:13.5px;padding:9px 11px;border:1.5px solid var(--line-strong);
-  border-radius:9px;background:var(--surface);color:var(--ink);cursor:pointer;appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c6a5e' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 11px center}
-select:focus,.filezone:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+/* grid of app tiles */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
 
-/* compare */
-.cta-row{margin-top:30px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.btn{font-family:var(--sans);font-size:15px;font-weight:600;padding:13px 26px;border-radius:11px;border:none;cursor:pointer;
-  transition:transform .08s,box-shadow .15s,background .15s;display:inline-flex;align-items:center;gap:9px}
-.btn:active{transform:translateY(1px)}
-.btn-primary{background:var(--primary);color:#fff;box-shadow:0 2px 0 var(--primary-deep)}
-.btn-primary:hover{background:var(--primary-deep)}
-.btn-primary:disabled{background:var(--line-strong);box-shadow:0 2px 0 #b3ae9e;cursor:not-allowed;color:#fff}
-.btn-ghost{background:var(--surface);color:var(--primary-deep);border:1.5px solid var(--primary)}
-.btn-ghost:hover{background:var(--primary-tint)}
-.status{font-size:13.5px;color:var(--muted)}
-.status.err{color:var(--rust);font-weight:500}
+.tile{display:block;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  padding:20px;text-decoration:none;color:var(--ink);position:relative;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
+.tile:hover{transform:translateY(-2px);box-shadow:0 10px 24px -12px rgba(22,33,27,.28);border-color:var(--line-strong)}
+.tile:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.tile:active{transform:translateY(0)}
 
-/* results */
-#results{display:none;margin-top:46px}
-#results.show{display:block;animation:fade .4s ease}
-@keyframes fade{from{opacity:0;translate:0 8px}to{opacity:1;translate:0}}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
-@media(max-width:720px){.cards{grid-template-columns:repeat(2,1fr)}}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
-.card .n{font-size:34px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.card .l{font-size:12.5px;color:var(--muted);margin-top:2px;font-weight:500}
-.card.hero{border:1.5px solid var(--rust);background:var(--rust-tint)}
-.card.hero .n{color:var(--rust)}
-.card.ok .n{color:var(--primary)}
-.card.warn .n{color:var(--amber)}
-.dl-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:30px}
+.seal{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none;position:relative;
+  box-shadow:0 2px 0 rgba(0,0,0,.14) inset,0 1px 0 rgba(255,255,255,.16) inset}
+.seal span{font-family:var(--mono);font-weight:700;font-size:15px;color:#fff;letter-spacing:-.02em}
+.seal.c-primary{background:var(--primary)}
+.seal.c-amber{background:var(--amber)}
+.seal.c-rust{background:var(--rust)}
+.seal.c-slate{background:var(--slate)}
 
-/* tabs */
-.tabs{display:flex;gap:4px;border-bottom:1.5px solid var(--line);margin-bottom:0;flex-wrap:wrap}
-.tab{font-family:var(--sans);font-size:13.5px;font-weight:550;padding:10px 15px;background:none;border:none;cursor:pointer;
-  color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1.5px;display:flex;align-items:center;gap:7px}
-.tab:hover{color:var(--ink)}
-.tab.active{color:var(--primary-deep);border-bottom-color:var(--primary)}
-.tab .cnt{font-family:var(--mono);font-size:11px;background:var(--line);color:var(--muted);padding:1px 6px;border-radius:20px;font-weight:600}
-.tab.active .cnt{background:var(--primary);color:#fff}
-.panel{display:none;padding-top:18px}
-.panel.active{display:block}
-.search{width:100%;max-width:340px;font-family:var(--sans);font-size:13px;padding:9px 12px;border:1.5px solid var(--line-strong);
-  border-radius:9px;margin-bottom:12px;background:var(--surface)}
-.tablewrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
-.scroll{max-height:440px;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;font-weight:600;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
-  background:var(--surface-2);padding:10px 13px;position:sticky;top:0;border-bottom:1.5px solid var(--line);white-space:nowrap;z-index:1}
-td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--surface-2)}
-.addr{max-width:380px}
-.key{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
-.lvl{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
-.lvl.exact{background:var(--primary-tint);color:var(--primary-deep)}
-.lvl.check{background:var(--amber-tint);color:var(--amber)}
-.empty{padding:30px;text-align:center;color:var(--muted);font-size:13.5px}
-.note{font-size:12.5px;color:var(--muted);margin-top:10px;padding-left:2px}
+.tile h3{font-size:15.5px;font-weight:640;letter-spacing:-.01em;margin-top:14px}
+.tile .desc{font-size:12.8px;color:var(--muted);margin-top:5px;line-height:1.45}
+.tile .meta{margin-top:13px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 7px;border-radius:5px;font-weight:600}
+.chip.tag-primary{background:var(--primary-tint);color:var(--primary-deep)}
+.chip.tag-amber{background:var(--amber-tint);color:var(--amber)}
+.chip.tag-rust{background:var(--rust-tint);color:var(--rust)}
+.chip.tag-slate{background:var(--slate-tint);color:var(--slate)}
+.arrow{position:absolute;top:20px;right:18px;width:16px;height:16px;color:var(--line-strong);transition:color .12s,transform .12s}
+.tile:hover .arrow{color:var(--primary);transform:translate(2px,-2px)}
 
-/* explainer */
-details.how{margin-top:42px;border:1px solid var(--line);border-radius:13px;background:var(--surface);overflow:hidden}
-details.how summary{cursor:pointer;padding:16px 20px;font-weight:600;font-size:14.5px;list-style:none;display:flex;
-  align-items:center;justify-content:space-between}
-details.how summary::-webkit-details-marker{display:none}
-details.how summary::after{content:"+";font-family:var(--mono);font-size:20px;color:var(--muted)}
-details.how[open] summary::after{content:"−"}
-.how-body{padding:0 20px 20px;font-size:13.5px;color:#3a3a32;line-height:1.65}
-.how-body p{margin-bottom:10px}
-.how-body code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--primary-deep)}
-.how-body ol{margin:8px 0 8px 20px}
-.how-body li{margin-bottom:6px}
-.priv{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--primary-deep);background:var(--primary-tint);
-  padding:5px 11px;border-radius:20px;font-weight:500;margin-top:14px}
-footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
-.filelist{margin-top:14px;display:flex;flex-direction:column;gap:10px}
-.filecard{border:1px solid var(--line);border-radius:11px;padding:13px 14px;background:var(--surface-2)}
-.filecard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.filecard .fn{font-family:var(--mono);font-size:12.5px;font-weight:600;word-break:break-all}
-.filecard .fmeta{color:var(--muted);font-size:11.5px;margin-top:2px}
-.rm{flex:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;padding:0 3px;border-radius:6px}
-.rm:hover{color:var(--rust);background:var(--rust-tint)}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px}
-@media(max-width:480px){.cols{grid-template-columns:1fr}}
-.cols .field{margin-top:0}
-.filezone.compact{padding:14px;margin-top:12px}
-.filezone.compact svg{width:21px;height:21px;margin-bottom:3px}
-.src{font-family:var(--mono);font-size:10.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:1px 6px;border-radius:5px;white-space:nowrap}
-.poolnote{font-size:11.5px;color:var(--muted);margin-top:10px;font-family:var(--mono)}
+/* empty state */
+.empty-state{display:none;text-align:center;padding:60px 20px;color:var(--muted);font-size:13.5px}
+.empty-state.show{display:block}
+
+/* placeholder tile — hints that more tools land here */
+.tile.ghost{border-style:dashed;border-color:var(--line-strong);background:transparent;box-shadow:none;
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:118px;cursor:default}
+.tile.ghost:hover{transform:none;box-shadow:none}
+.tile.ghost .desc{margin-top:6px}
+
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer span{font-family:var(--mono)}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="masthead">
-    <div class="mark" aria-hidden="true"></div>
+  <header class="masthead">
+    <div class="mark"></div>
     <div>
-      <div class="eyebrow">Внутренний инструмент</div>
-      <h1>Сверка адресов ЛПУ</h1>
-      <p>Сравнивает адреса, которые у нас уже есть, с адресами из ТЗ клиента и показывает, каких из них у нас нет — даже когда один и тот же адрес записан по-разному в разных источниках.</p>
+      <div class="eyebrow">Внутренние инструменты</div>
+      <h1>Инструменты</h1>
+      <p>Рабочие инструменты, собранные в одном месте. Открой нужный — он работает прямо в браузере, без установки.</p>
     </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="search" type="text" placeholder="Найти инструмент…" autocomplete="off">
+    </div>
+    <div class="count" id="count"></div>
   </div>
 
-  <!-- ШАГ 1 -->
-  <div class="step">
-    <div class="step-head"><span class="step-num">1</span><h2>Загрузите файлы</h2><span>Excel: .xlsx, .xls или .csv · в каждое поле можно несколько файлов</span></div>
-    <div class="uploads">
+  <div class="grid" id="grid"></div>
+  <div class="empty-state" id="emptyState">Ничего не найдено. Попробуй другой запрос.</div>
 
-      <!-- что есть -->
-      <div class="drop" data-role="base">
-        <h3><span class="tag base">Что есть</span> Наши источники</h3>
-        <p class="hint">Адреса, которые уже заведены: выгрузка из админки, amoCRM и любые другие. Объединяются и дедуплицируются.</p>
-        <label class="filezone" tabindex="0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <b>Выбрать файлы</b> или перетащить сюда
-          <span class="fz-sub">можно сразу несколько</span>
-          <input type="file" accept=".xlsx,.xls,.xlsm,.csv" multiple hidden>
-        </label>
-        <div class="filelist" id="filesBase"></div>
-        <div class="poolnote" id="poolBase"></div>
-      </div>
+  <footer>
+    <span id="toolCount"></span>
+    <span>Новые инструменты появляются здесь по мере создания</span>
+  </footer>
 
-      <!-- ТЗ -->
-      <div class="drop" data-role="tz">
-        <h3><span class="tag inc">ТЗ клиента</span> Нужные адреса</h3>
-        <p class="hint">Перечень адресов, которые требуются по заданию от клиента.</p>
-        <label class="filezone" tabindex="0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <b>Выбрать файлы</b> или перетащить сюда
-          <span class="fz-sub">можно сразу несколько</span>
-          <input type="file" accept=".xlsx,.xls,.xlsm,.csv" multiple hidden>
-        </label>
-        <div class="filelist" id="filesTz"></div>
-        <div class="poolnote" id="poolTz"></div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ШАГ 2 -->
-  <div class="step">
-    <div class="step-head"><span class="step-num">2</span><h2>Сравните</h2></div>
-    <div class="cta-row">
-      <button class="btn btn-primary" id="runBtn" disabled>Сравнить адреса</button>
-      <span class="status" id="status">Загрузите хотя бы один файл в каждое поле.</span>
-    </div>
-  </div>
-
-  <!-- РЕЗУЛЬТАТЫ -->
-  <div id="results">
-    <div class="step-head" style="margin-top:6px"><span class="step-num">3</span><h2>Результат</h2></div>
-    <div class="cards">
-      <div class="card hero"><div class="n" id="cMissing">0</div><div class="l">Нет у нас — нужны по ТЗ</div></div>
-      <div class="card ok"><div class="n" id="cMatch">0</div><div class="l">Уже есть — закрыто по ТЗ</div></div>
-      <div class="card warn"><div class="n" id="cCheck">0</div><div class="l">Требует проверки</div></div>
-      <div class="card"><div class="n" id="cOnly">0</div><div class="l">Есть у нас, не в ТЗ</div></div>
-    </div>
-    <div class="dl-row">
-      <button class="btn btn-primary" id="dlBtn">Скачать результат (Excel)</button>
-      <span class="status">5 листов: сводка, нет у нас по ТЗ, совпадения, на проверку, не в ТЗ.</span>
-    </div>
-
-    <div class="tabs" id="tabs">
-      <button class="tab active" data-tab="missing">Нет у нас (по ТЗ) <span class="cnt" id="tMissing">0</span></button>
-      <button class="tab" data-tab="check">Требует проверки <span class="cnt" id="tCheck">0</span></button>
-      <button class="tab" data-tab="match">Совпадения <span class="cnt" id="tMatch">0</span></button>
-      <button class="tab" data-tab="only">Не в ТЗ <span class="cnt" id="tOnly">0</span></button>
-    </div>
-
-    <div class="panel active" data-panel="missing">
-      <input class="search" placeholder="Поиск по адресу…" data-for="missing">
-      <div class="tablewrap"><div class="scroll"><table><thead><tr><th>№</th><th>Адрес (ТЗ)</th><th>Город</th><th>Улица</th><th>Дом</th></tr></thead><tbody id="bodyMissing"></tbody></table></div></div>
-      <p class="note">Адреса из ТЗ, которых нет ни в одном нашем источнике. Это главный результат — их нужно добавить.</p>
-    </div>
-    <div class="panel" data-panel="check">
-      <input class="search" placeholder="Поиск по адресу…" data-for="check">
-      <div class="tablewrap"><div class="scroll"><table><thead><tr><th>Наш адрес</th><th>Источник</th><th>Адрес из ТЗ</th><th>Что проверить</th></tr></thead><tbody id="bodyCheck"></tbody></table></div></div>
-      <p class="note">Похоже на один и тот же адрес, но номер дома/корпуса или название улицы записаны по-разному. Сверьте вручную.</p>
-    </div>
-    <div class="panel" data-panel="match">
-      <input class="search" placeholder="Поиск по адресу…" data-for="match">
-      <div class="tablewrap"><div class="scroll"><table><thead><tr><th>Наш адрес</th><th>Источник</th><th>Адрес из ТЗ</th><th>Уровень</th></tr></thead><tbody id="bodyMatch"></tbody></table></div></div>
-    </div>
-    <div class="panel" data-panel="only">
-      <input class="search" placeholder="Поиск по адресу…" data-for="only">
-      <div class="tablewrap"><div class="scroll"><table><thead><tr><th>Наш адрес</th><th>Источник</th><th>Город</th><th>Улица</th><th>Дом</th></tr></thead><tbody id="bodyOnly"></tbody></table></div></div>
-      <p class="note">Эти адреса есть у нас, но в ТЗ их не запрашивали.</p>
-    </div>
-  </div>
-
-  <details class="how">
-    <summary>Как устроено сопоставление</summary>
-    <div class="how-body">
-      <p>Адреса почти никогда не совпадают посимвольно: <code>ул Жуковского, д 17А</code> и <code>Жуковского ул, дом 17 А</code> — это одно и то же. Поэтому каждый адрес разбирается на три части и нормализуется:</p>
-      <ol>
-        <li>Убираются индекс, регион и административные обёртки: <code>г.о.</code>, <code>вн.тер.г.</code>, <code>городской округ</code>, <code>м.р-н</code>, районы.</li>
-        <li>Тип улицы приводится к единому виду независимо от его места: <code>ул Мира</code> = <code>Мира ул</code>, <code>ш Энтузиастов</code> = <code>шоссе Энтузиастов</code>.</li>
-        <li>Номер дома собирается с корпусом, строением и литерой; <code>ё</code> приводится к <code>е</code>.</li>
-      </ol>
-      <p>Несколько наших источников (админка, amoCRM и др.) объединяются в один список и дедуплицируются — адрес считается «нашим», если он есть хотя бы в одном из них. Дальше сопоставление по убыванию надёжности: точное совпадение город+улица+дом → совпадение с поправкой на корпус/литеру → похожее название улицы при том же доме. Частая ловушка — корпус через дробь (<code>д 158/3</code> = <code>д 158 к 3</code>): такие случаи и расхождения литер не склеиваются автоматически, а попадают в «Требует проверки».</p>
-      <p class="priv">🔒 Файлы обрабатываются прямо в браузере и никуда не отправляются.</p>
-    </div>
-  </details>
-
-  <footer>Сверка адресов ЛПУ · работает в браузере · для чтения и записи Excel используется библиотека SheetJS.</footer>
 </div>
 
 <script>
-// ===== Движок нормализации и сопоставления адресов (порт с Python) =====
-const BL='(?<![а-яёa-z0-9])', BR='(?![а-яёa-z0-9])';
-const rx=(body,flags='i')=>new RegExp(BL+'(?:'+body+')'+BR,flags);
-const STREET='улица|ул|проспект|пр-кт|пр-т|пркт|просп|проезд|пр-д|шоссе|ш|переулок|пер|бульвар|б-р|бр|площадь|пл|набережная|наб|тупик|туп|линия|аллея|ал|квартал|кв-л|тракт|спуск|съезд|кольцо';
-const LOC='город|г|село|с|посёлок|поселок|пос|пгт|рп|деревня|дер|станица|ст-ца|стца|хутор|аул|микрорайон|мкр|тер|снт|днп|жк|поселение|дп|п';
-const SETTLE='город|г|село|с|посёлок|поселок|пос|пгт|рп|деревня|дер|станица|ст-ца|стца|хутор|аул|п';
-const REGION=/(?:обл(?:асть)?|край|респ(?:ублик\w+)?|автономн\w+|\bао\b|югра|киргизия)/i;
-const ADMIN=[/городской округ/i,/город(?:ской)?\s+округ/i,/г\.о\./i,/\bг\/о\b/i,/вн\.тер\.г\.?/i,/внутригородск\w+/i,/муниципальн\w+/i,/\bм\.р-н\b/i,/\bг\.п\.\b/i,/\bс\.п\.\b/i,/сельск\w+\s+поселени\w+/i,/\bсельсовет\b/i,/городское поселение/i,/\bтерритория\b/i,/совхоз/i,/квартал\s+северный/i];
-const yo=s=>String(s).replace(/ё/g,'е').replace(/Ё/g,'Е');
-const STREET_RE=rx(STREET), LOC_RE=new RegExp('(^|\\s)(?:'+LOC+')'+BR,'i'), SETTLE_RE=new RegExp('(^|\\s)(?:'+SETTLE+')'+BR,'i');
-
-const isRegion=p=>REGION.test(p);
-const isAdmin=p=>ADMIN.some(r=>r.test(p));
-const isDistrict=p=>/\bр-н\b/i.test(p)||/\bрайон\b/i.test(p);
-const hasHouse=p=>rx('д|дом|влд|влад\\w*|вл|зд|здание').test(p)&&/\d/.test(p.replace(/^[^]*?(?:д|дом|влд|влад\w*|вл|зд|здание)\.?\s*№?\s*/i,'').slice(0,3))
-   || /^\s*(?:к|корпус)\b\.?\s*\d/i.test(p.trim())
-   || /^\s*\d+[а-яё]?(?:[/-]\d+[а-яё]?)*\s*$/i.test(p.trim());
-// более точный hasHouse как в python:
-function hasHouse2(p){
-  if(new RegExp(BL+'(?:д|дом|влд|влад\\w*|вл|зд|здание)'+BR+'\\.?\\s*№?\\s*\\d','i').test(p)) return true;
-  if(/^\s*(?:к|корпус)\b\.?\s*\d/i.test(p.trim())) return true;
-  if(/^\s*\d+[а-яё]?(?:[/-]\d+[а-яё]?)*\s*$/i.test(p.trim())) return true;
-  return false;
-}
-const hasLoc=p=>LOC_RE.test(p.trim());
-const hasStreet=p=>STREET_RE.test(p);
-
-function houseParts(s){
-  s=yo(s).toLowerCase();
-  s=s.split(new RegExp(BL+'(?:помещени\\w*|помещ|пом|офис|оф|кв|квартира|этаж|комн\\w*)'+BR,'i'))[0];
-  let main='',kor='',stro='',lit='';
-  let m=s.match(new RegExp(BL+'(?:дом|д|влад\\w*|влд|вл|зд|здание)'+BR+'\\.?\\s*№?\\s*([0-9]+[а-я]?(?:[/-][0-9]+[а-я]?)*)','i'));
-  if(m) main=m[1];
-  else{ let m2=s.match(/^\s*№?\s*([0-9]+[а-я]?(?:[/-][0-9]+[а-я]?)*)/i); if(m2) main=m2[1]; }
-  let k=s.match(new RegExp(BL+'(?:корпус|корп|кор|к)'+BR+'\\.?\\s*№?\\s*([0-9]+[а-я]?|[а-я])'+BR,'i'));
-  if(k) kor=k[1].trim();
-  let st=s.match(new RegExp(BL+'(?:строение|стр|с)'+BR+'\\.?\\s*№?\\s*([0-9]+[а-я]?)','i'));
-  if(st) stro=st[1];
-  let li=s.match(new RegExp(BL+'(?:литера|лит|литер)'+BR+'\\.?\\s*([а-я])'+BR,'i'));
-  if(li) lit=li[1];
-  return [main.replace(/\s/g,''),kor,stro,lit];
-}
-const houseStr=h=>{let o=h[0];if(h[1])o+='к'+h[1];if(h[2])o+='с'+h[2];if(h[3])o+='л'+h[3];return o;};
-function normStreet(s){
-  s=yo(s).toLowerCase().replace(/["«»]/g,'');
-  s=s.replace(new RegExp(BL+'им(?:ени|\\.)?'+BR,'gi'),' ');
-  s=s.replace(new RegExp(BL+'(?:'+STREET+')'+BR+'\\.?','gi'),' ');
-  s=s.replace(/[^\wа-яё\s/-]/gi,' ');
-  return s.replace(/\s+/g,' ').trim();
-}
-function normCity(s){
-  s=yo(s).toLowerCase();
-  s=s.replace(new RegExp(BL+'(?:'+LOC+')'+BR+'\\.?','gi'),' ');
-  s=s.replace(/[^\wа-яё\s-]/gi,' ');
-  return s.replace(/\s+/g,' ').trim();
-}
-function parse(addr,dropIndex){
-  let a=yo(addr);
-  if(dropIndex) a=a.replace(/^\s*\d{6}\s*,?/,'');
-  let parts=a.split(',').map(p=>p.trim()).filter(Boolean);
-  parts=parts.filter(p=>!isRegion(p)&&!isAdmin(p)&&!isDistrict(p));
-  let houseIdx=parts.findIndex(hasHouse2);
-  if(houseIdx<0) houseIdx=null;
-  let pre=houseIdx!==null?parts.slice(0,houseIdx):parts;
-  let hp=houseIdx!==null?houseParts(parts.slice(houseIdx).join(', ')):['','','',''];
-  let street='',streetIdx=null;
-  for(let i=pre.length-1;i>=0;i--){ if(hasStreet(pre[i])){streetIdx=i;break;} }
-  if(streetIdx===null&&pre.length){
-    let cand=pre[pre.length-1];
-    if(!hasLoc(cand)||pre.length===1) streetIdx=pre.length-1;
+/* ===========================================================
+   Реестр инструментов.
+   Чтобы добавить новый инструмент — добавь один объект в массив.
+   href — путь к html-файлу инструмента (в папке tools/).
+   accent — один из: primary | amber | rust | slate
+   =========================================================== */
+const TOOLS = [
+  {
+    title: "Сверка адресов ЛПУ",
+    desc: "Сравнивает адреса из наших источников со списком из ТЗ: находит совпадения, недостающие и спорные адреса.",
+    href: "tools/sverka-adresov-lpu.html",
+    tags: ["Адреса", "Excel"],
+    accent: "primary",
+    monogram: "СА"
   }
-  let cands;
-  if(streetIdx!==null&&!(hasLoc(pre[streetIdx])&&!hasStreet(pre[streetIdx]))){
-    street=normStreet(pre[streetIdx]); cands=pre.slice(0,streetIdx);
-  }else{ cands=pre; streetIdx=null; }
-  let settle=cands.filter(p=>SETTLE_RE.test(p.trim()));
-  let locParts=cands.filter(hasLoc);
-  let city='';
-  if(settle.length) city=normCity(settle[settle.length-1]);
-  else if(locParts.length) city=normCity(locParts[locParts.length-1]);
-  else if(cands.length) city=normCity(cands[cands.length-1]);
-  return [city,street,hp];
-}
-// ---- difflib.ratio (Ratcliff/Obershelp) ----
-function lcs(a,b,al,ah,bl,bh){
-  let best=[al,bl,0];
-  const j2={};
-  for(let i=al;i<ah;i++){
-    const newj2={};
-    for(let j=bl;j<bh;j++){
-      if(a[i]===b[j]){ const k=(j2[j-1]||0)+1; newj2[j]=k;
-        if(k>best[2]) best=[i-k+1,j-k+1,k]; } }
-    Object.assign(j2,newj2); for(const key in j2) if(!(key in newj2)) delete j2[key];
-  }
-  return best;
-}
-function matchLen(a,b,al,ah,bl,bh){
-  const [i,j,k]=lcs(a,b,al,ah,bl,bh);
-  if(k===0) return 0;
-  return k+matchLen(a,b,al,i,bl,j)+matchLen(a,b,i+k,ah,j+k,bh);
-}
-function ratio(a,b){
-  if(!a&&!b) return 0;
-  const T=a.length+b.length; if(T===0) return 0;
-  return 2*matchLen(a,b,0,a.length,0,b.length)/T;
-}
-const korOk=(a,b)=>a===b||a===''||b==='';
-const houseNums=hp=>{
-  let t=(hp[0].match(/\d+/g)||[]);
-  if(hp[1]&&/^\d/.test(hp[1])) t.push(hp[1].match(/\d+/)[0]);
-  if(hp[2]&&/^\d/.test(hp[2])) t.push(hp[2].match(/\d+/)[0]);
-  return new Set(t);
-};
-const houseCompat=(a,b)=>{const na=houseNums(a),nb=houseNums(b);if(!na.size||!nb.size)return false;if(na.size!==nb.size)return false;for(const x of na)if(!nb.has(x))return false;return true;};
-const firstNum=hp=>{const m=hp[0].match(/\d+/);return m?m[0]:'';};
+];
 
-function runMatch(oursAddr,gemAddr){
-  const ours=oursAddr.map(a=>{const[c,s,hp]=parse(a,false);return{a,c,s,hp,hstr:houseStr(hp),hmain:hp[0],hkor:hp[1]};});
-  const gem=gemAddr.map(a=>{const[c,s,hp]=parse(a,true);return{a,c,s,hp,hstr:houseStr(hp),hmain:hp[0],hkor:hp[1]};});
-  const full={},cm={},cc={};
-  gem.forEach((r,j)=>{
-    (full[r.c+'|'+r.s+'|'+r.hstr]||(full[r.c+'|'+r.s+'|'+r.hstr]=[])).push(j);
-    if(r.hmain)(cm[r.c+'|'+r.hmain]||(cm[r.c+'|'+r.hmain]=[])).push(j);
-    (cc[r.c]||(cc[r.c]=[])).push(j);
-  });
-  const used=new Set(); const res=[];
-  ours.forEach((r,i)=>{
-    let m=null,lvl='нет',sc=0;
-    for(const j of (full[r.c+'|'+r.s+'|'+r.hstr]||[])) if(!used.has(j)){m=j;lvl='точное';sc=1;break;}
-    if(m===null&&r.hmain){ for(const j of (cm[r.c+'|'+r.hmain]||[])){ if(used.has(j))continue; if(gem[j].s===r.s&&korOk(gem[j].hkor,r.hkor)){m=j;lvl='точное*';sc=0.99;break;} } }
-    if(m===null&&r.hmain){ let best=null,br=0; for(const j of (cm[r.c+'|'+r.hmain]||[])){ if(used.has(j))continue; const rr=ratio(r.s,gem[j].s); if(rr>br){br=rr;best=j;} } if(best!==null&&br>=0.55&&korOk(gem[best].hkor,r.hkor)){m=best;lvl='вероятное';sc=Math.round(br*100)/100;} }
-    if(m===null&&r.hp[0]){ const fn=firstNum(r.hp); let best=null,br=0; for(const j of (cc[r.c]||[])){ if(used.has(j))continue; const gh=gem[j].hp; if(firstNum(gh)!==fn)continue; const rr=ratio(r.s,gem[j].s); if((houseCompat(r.hp,gh)&&rr>=0.7)||(gem[j].s===r.s&&rr>0)){ if(rr>br){br=rr;best=j;} } } if(best!==null){m=best;lvl='проверить';sc=Math.round(br*100)/100;} }
-    if(m!==null) used.add(m);
-    res.push({i,j:m,lvl,sc});
-  });
-  return {ours,gem,res,used};
-}
-// embedded
-/* ===== Приложение: сверка адресов ЛПУ (несколько источников + ТЗ) ===== */
-const State={base:{files:[]},tz:{files:[]},result:null,buckets:null};
-let UID=0;
+const ACCENT_CLASS = { primary:"c-primary", amber:"c-amber", rust:"c-rust", slate:"c-slate" };
+const TAG_CLASS = { primary:"tag-primary", amber:"tag-amber", rust:"tag-rust", slate:"tag-slate" };
 
-function pickColumn(headers,kind){
-  const h=headers.map(x=>String(x||'').toLowerCase());
-  const find=(...subs)=>{for(const s of subs){const i=h.findIndex(x=>x.includes(s));if(i>=0)return i;}return -1;};
-  if(kind==='addr'){let i=find('адрес склада','полный адрес','адрес','address','addr');return i<0?0:i;}
-  if(kind==='city'){return find('населен','город','city');}
-  return -1;
-}
-function setStatus(msg,err){const s=document.getElementById('status');s.textContent=msg;s.classList.toggle('err',!!err);}
-
-function readFiles(fileList,zone){
-  Array.from(fileList).forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      try{
-        const wb=XLSX.read(e.target.result,{type:'array'});
-        const sheet=wb.Sheets[wb.SheetNames[0]];
-        const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',blankrows:false});
-        if(!rows.length) throw new Error('пустой лист');
-        const headers=rows[0].map(x=>String(x).trim());
-        const data=rows.slice(1).filter(r=>r.some(c=>String(c).trim()!==''));
-        State[zone].files.push({id:++UID,name:file.name,sheet:wb.SheetNames[0],headers,rows:data,
-          addrCol:pickColumn(headers,'addr'),cityCol:pickColumn(headers,'city')});
-        renderZone(zone); checkReady();
-      }catch(err){ setStatus('Не удалось прочитать «'+file.name+'»: '+err.message,true); }
-    };
-    reader.onerror=()=>setStatus('Ошибка чтения файла «'+file.name+'».',true);
-    reader.readAsArrayBuffer(file);
-  });
-}
-function renderZone(zone){
-  const list=document.getElementById(zone==='base'?'filesBase':'filesTz');
-  const files=State[zone].files;
-  list.innerHTML=files.map(f=>{
-    const optsA=f.headers.map((h,i)=>`<option value="${i}" ${i===f.addrCol?'selected':''}>${escapeHtml(h||('Колонка '+(i+1)))}</option>`).join('');
-    const optsC='<option value="-1">— нет —</option>'+f.headers.map((h,i)=>`<option value="${i}" ${i===f.cityCol?'selected':''}>${escapeHtml(h||('Колонка '+(i+1)))}</option>`).join('');
-    return `<div class="filecard" data-id="${f.id}">
-      <div class="filecard-top">
-        <div><div class="fn">${escapeHtml(f.name)}</div><div class="fmeta">${f.rows.length} строк · лист «${escapeHtml(f.sheet)}»</div></div>
-        <button class="rm" title="Убрать файл" data-rm="${f.id}" data-zone="${zone}">×</button>
-      </div>
-      <div class="cols">
-        <div class="field"><label>Колонка с адресом</label><select data-col="addr" data-id="${f.id}" data-zone="${zone}">${optsA}</select></div>
-        <div class="field"><label>Город — необязательно</label><select data-col="city" data-id="${f.id}" data-zone="${zone}">${optsC}</select></div>
-      </div>
-    </div>`;
-  }).join('');
-  const note=document.getElementById(zone==='base'?'poolBase':'poolTz');
-  if(files.length>1){const tot=files.reduce((s,f)=>s+f.rows.length,0);note.textContent=`${files.length} файла · ${tot} строк суммарно (объединяются и дедуплицируются)`;}
-  else note.textContent='';
-}
-document.addEventListener('click',e=>{
-  const rm=e.target.closest('[data-rm]'); if(!rm)return;
-  const zone=rm.dataset.zone, id=+rm.dataset.rm;
-  State[zone].files=State[zone].files.filter(f=>f.id!==id);
-  renderZone(zone); checkReady();
-});
-document.addEventListener('change',e=>{
-  const sel=e.target.closest('select[data-col]'); if(!sel)return;
-  const f=State[sel.dataset.zone].files.find(x=>x.id===+sel.dataset.id); if(!f)return;
-  if(sel.dataset.col==='addr') f.addrCol=+sel.value; else f.cityCol=+sel.value;
-});
-function checkReady(){
-  const ready=State.base.files.length>0&&State.tz.files.length>0;
-  document.getElementById('runBtn').disabled=!ready;
-  if(ready) setStatus('Готово к сравнению.',false);
-  else setStatus('Загрузите хотя бы один файл в каждое поле.',false);
+function renderTiles(list){
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('emptyState');
+  grid.innerHTML = list.map(t => `
+    <a class="tile" href="${t.href}">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg>
+      <div class="seal ${ACCENT_CLASS[t.accent]||'c-primary'}"><span>${t.monogram}</span></div>
+      <h3>${t.title}</h3>
+      <div class="desc">${t.desc}</div>
+      <div class="meta">${t.tags.map(tag=>`<span class="chip ${TAG_CLASS[t.accent]||'tag-primary'}">${tag}</span>`).join('')}</div>
+    </a>
+  `).join('') + `
+    <div class="tile ghost">
+      <div class="desc">Следующий инструмент появится здесь.</div>
+    </div>
+  `;
+  empty.classList.toggle('show', list.length===0);
+  document.getElementById('count').textContent = list.length + ' из ' + TOOLS.length;
+  document.getElementById('toolCount').textContent = 'Всего инструментов: ' + TOOLS.length;
 }
 
-/* зоны загрузки */
-function wireZone(role,zone){
-  const el=document.querySelector(`.drop[data-role="${role}"]`);
-  const input=el.querySelector('input[type=file]');
-  const dz=el.querySelector('.filezone');
-  const open=()=>input.click();
-  dz.addEventListener('click',open);
-  dz.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();open();}});
-  input.addEventListener('change',ev=>{if(ev.target.files.length)readFiles(ev.target.files,zone);input.value='';});
-  ['dragenter','dragover'].forEach(t=>el.addEventListener(t,ev=>{ev.preventDefault();el.classList.add('drag');}));
-  ['dragleave','drop'].forEach(t=>el.addEventListener(t,ev=>{ev.preventDefault();if(t==='dragleave'&&el.contains(ev.relatedTarget))return;el.classList.remove('drag');}));
-  el.addEventListener('drop',ev=>{if(ev.dataTransfer.files.length)readFiles(ev.dataTransfer.files,zone);});
-}
-wireZone('base','base');
-wireZone('tz','tz');
-
-/* объединение + дедупликация */
-function pool(zone){
-  const out=[];
-  State[zone].files.forEach(f=>{
-    f.rows.forEach(r=>{
-      const addr=String(r[f.addrCol]||'').trim();
-      if(!addr) return;
-      const city=f.cityCol>=0?String(r[f.cityCol]||'').trim():'';
-      out.push({addr,city,source:f.name});
-    });
-  });
-  return out;
-}
-function dedupe(list,dropIndex){
-  const seen=new Map();
-  list.forEach(item=>{
-    const [c,s,hp]=parse(item.addr,dropIndex);
-    const key=(c||s||houseStr(hp))?(c+'|'+s+'|'+houseStr(hp)):('raw:'+item.addr.toLowerCase());
-    if(!seen.has(key)) seen.set(key,{...item,sources:new Set([item.source])});
-    else seen.get(key).sources.add(item.source);
-  });
-  return [...seen.values()].map(x=>({...x,source:[...x.sources].join(', ')}));
-}
-
-/* запуск */
-document.getElementById('runBtn').addEventListener('click',()=>{
-  setStatus('Считаю…',false);
-  document.getElementById('runBtn').disabled=true;
-  setTimeout(()=>{
-    try{
-      const oursList=dedupe(pool('base'),false);
-      const tzList  =dedupe(pool('tz'),true);
-      if(!oursList.length||!tzList.length) throw new Error('после фильтрации не осталось адресов — проверьте выбор колонок');
-      const M=runMatch(oursList.map(x=>x.addr),tzList.map(x=>x.addr));
-      State.result={M,oursList,tzList};
-      renderResults();
-      setStatus(`Готово. Наших уникальных адресов: ${oursList.length}, в ТЗ: ${tzList.length}.`,false);
-    }catch(err){ setStatus('Ошибка при сравнении: '+err.message,true); console.error(err); }
-    document.getElementById('runBtn').disabled=false;
-  },30);
+document.getElementById('search').addEventListener('input', e=>{
+  const q = e.target.value.trim().toLowerCase();
+  const filtered = !q ? TOOLS : TOOLS.filter(t =>
+    t.title.toLowerCase().includes(q) ||
+    t.desc.toLowerCase().includes(q) ||
+    t.tags.some(tag=>tag.toLowerCase().includes(q))
+  );
+  renderTiles(filtered);
 });
 
-const LVLNAME={'точное':'1. Точное','точное*':'2. Точное (корпус/литера)','вероятное':'3. Вероятное','проверить':'4. На проверку'};
-function buildBuckets(){
-  const {M,oursList,tzList}=State.result;
-  const matched=[],check=[],only=[];
-  M.res.forEach(r=>{
-    const o=oursList[r.i];
-    if(r.j===null){const p=M.ours[r.i];only.push({addr:o.addr,src:o.source,c:p.c,s:p.s,h:houseStr(p.hp)});return;}
-    const g=tzList[r.j];
-    matched.push({our:o.addr,src:o.source,tz:g.addr,lvl:r.lvl,sc:r.sc});
-    if(r.lvl==='проверить'||r.lvl==='вероятное')
-      check.push({our:o.addr,src:o.source,tz:g.addr,lvl:r.lvl,note:r.lvl==='проверить'?'Сверьте номер дома/корпуса':'Название улицы записано иначе'});
-  });
-  const missing=[];
-  M.gem.forEach((g,j)=>{if(!M.used.has(j)){const t=tzList[j];missing.push({addr:t.addr,city:t.city,c:g.c,s:g.s,h:houseStr(g.hp)});}});
-  return {matched,check,only,missing};
-}
-function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function renderResults(){
-  const B=buildBuckets(); State.buckets=B;
-  const set=(id,v)=>document.getElementById(id).textContent=v;
-  set('cMissing',B.missing.length);set('cMatch',B.matched.length);set('cCheck',B.check.length);set('cOnly',B.only.length);
-  set('tMissing',B.missing.length);set('tMatch',B.matched.length);set('tCheck',B.check.length);set('tOnly',B.only.length);
-  fillMissing(B.missing);fillCheck(B.check);fillMatch(B.matched);fillOnly(B.only);
-  const res=document.getElementById('results');res.classList.add('show');res.scrollIntoView({behavior:'smooth',block:'start'});
-}
-const LIMIT=400;
-const note=(n)=>n>LIMIT?`<tr><td colspan="9" class="empty">Показаны первые ${LIMIT} из ${n}. Полный список — в скачанном Excel.</td></tr>`:'';
-const empty=(t)=>`<tr><td colspan="9" class="empty">${t}</td></tr>`;
-function fillMissing(a){document.getElementById('bodyMissing').innerHTML=a.length?a.slice(0,LIMIT).map((r,i)=>`<tr><td class="key">${i+1}</td><td class="addr">${escapeHtml(r.addr)}</td><td>${escapeHtml(r.city)}</td><td>${escapeHtml(r.s)}</td><td class="key">${escapeHtml(r.h)}</td></tr>`).join('')+note(a.length):empty('Все адреса из ТЗ уже есть в наших источниках.');}
-function fillCheck(a){document.getElementById('bodyCheck').innerHTML=a.length?a.slice(0,LIMIT).map(r=>`<tr><td class="addr">${escapeHtml(r.our)}</td><td><span class="src">${escapeHtml(r.src)}</span></td><td class="addr">${escapeHtml(r.tz)}</td><td><span class="lvl check">${escapeHtml(r.note)}</span></td></tr>`).join('')+note(a.length):empty('Спорных совпадений нет.');}
-function fillMatch(a){document.getElementById('bodyMatch').innerHTML=a.length?a.slice(0,LIMIT).map(r=>`<tr><td class="addr">${escapeHtml(r.our)}</td><td><span class="src">${escapeHtml(r.src)}</span></td><td class="addr">${escapeHtml(r.tz)}</td><td><span class="lvl ${r.lvl==='проверить'||r.lvl==='вероятное'?'check':'exact'}">${LVLNAME[r.lvl]||r.lvl}</span></td></tr>`).join('')+note(a.length):empty('Совпадений нет.');}
-function fillOnly(a){document.getElementById('bodyOnly').innerHTML=a.length?a.slice(0,LIMIT).map(r=>`<tr><td class="addr">${escapeHtml(r.addr)}</td><td><span class="src">${escapeHtml(r.src)}</span></td><td>${escapeHtml(r.c)}</td><td>${escapeHtml(r.s)}</td><td class="key">${escapeHtml(r.h)}</td></tr>`).join('')+note(a.length):empty('Все наши адреса присутствуют в ТЗ.');}
-
-/* вкладки */
-document.getElementById('tabs').addEventListener('click',e=>{
-  const t=e.target.closest('.tab'); if(!t)return;
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  document.querySelector(`.panel[data-panel="${t.dataset.tab}"]`).classList.add('active');
-});
-/* поиск */
-document.querySelectorAll('.search').forEach(inp=>{
-  inp.addEventListener('input',()=>{
-    const q=inp.value.toLowerCase(), panel=inp.closest('.panel');
-    panel.querySelectorAll('tbody tr').forEach(tr=>{
-      if(tr.querySelector('.empty'))return;
-      tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
-    });
-  });
-});
-
-/* выгрузка Excel */
-document.getElementById('dlBtn').addEventListener('click',()=>{
-  const B=State.buckets, M=State.result.M;
-  const cnt=l=>M.res.filter(r=>r.lvl===l).length;
-  const srcB=[...new Set(State.base.files.map(f=>f.name))].join(', ');
-  const srcT=[...new Set(State.tz.files.map(f=>f.name))].join(', ');
-  const wb=XLSX.utils.book_new();
-  const summary=[
-    ['Сверка адресов ЛПУ',''],['',''],
-    ['Показатель','Значение'],
-    ['Наши источники',srcB],
-    ['Уникальных адресов у нас',State.result.oursList.length],
-    ['Файлы ТЗ',srcT],
-    ['Адресов в ТЗ',State.result.tzList.length],
-    ['',''],
-    ['Сопоставлено (уже есть)',B.matched.length],
-    ['  точное',cnt('точное')],['  точное (корпус/литера)',cnt('точное*')],
-    ['  вероятное',cnt('вероятное')],['  на проверку',cnt('проверить')],
-    ['НЕТ У НАС — НУЖНЫ ПО ТЗ',B.missing.length],
-    ['Есть у нас, не в ТЗ',B.only.length],
-  ];
-  const s0=XLSX.utils.aoa_to_sheet(summary);s0['!cols']=[{wch:32},{wch:60}];
-  XLSX.utils.book_append_sheet(wb,s0,'Сводка');
-
-  const m=[['№','Адрес (ТЗ)','Город','Город (норм.)','Улица (норм.)','Дом (норм.)']];
-  B.missing.forEach((r,i)=>m.push([i+1,r.addr,r.city,r.c,r.s,r.h]));
-  const s1=XLSX.utils.aoa_to_sheet(m);s1['!cols']=[{wch:6},{wch:70},{wch:18},{wch:16},{wch:22},{wch:12}];
-  s1['!autofilter']={ref:'A1:F'+m.length};XLSX.utils.book_append_sheet(wb,s1,'Нет у нас (по ТЗ)');
-
-  const mt=[['Наш адрес','Источник','Адрес из ТЗ','Уровень','Близость улицы']];
-  B.matched.forEach(r=>mt.push([r.our,r.src,r.tz,LVLNAME[r.lvl]||r.lvl,r.sc]));
-  const s2=XLSX.utils.aoa_to_sheet(mt);s2['!cols']=[{wch:48},{wch:22},{wch:50},{wch:26},{wch:12}];
-  s2['!autofilter']={ref:'A1:E'+mt.length};XLSX.utils.book_append_sheet(wb,s2,'Совпадения');
-
-  const ch=[['Наш адрес','Источник','Адрес из ТЗ','Что проверить']];
-  B.check.forEach(r=>ch.push([r.our,r.src,r.tz,r.note]));
-  const s3=XLSX.utils.aoa_to_sheet(ch);s3['!cols']=[{wch:46},{wch:22},{wch:50},{wch:34}];
-  s3['!autofilter']={ref:'A1:D'+ch.length};XLSX.utils.book_append_sheet(wb,s3,'Требует проверки');
-
-  const on=[['Наш адрес','Источник','Город (норм.)','Улица (норм.)','Дом (норм.)']];
-  B.only.forEach(r=>on.push([r.addr,r.src,r.c,r.s,r.h]));
-  const s4=XLSX.utils.aoa_to_sheet(on);s4['!cols']=[{wch:50},{wch:22},{wch:18},{wch:22},{wch:12}];
-  s4['!autofilter']={ref:'A1:E'+on.length};XLSX.utils.book_append_sheet(wb,s4,'Не в ТЗ');
-
-  const d=new Date(),p=n=>String(n).padStart(2,'0');
-  XLSX.writeFile(wb,`Сверка_адресов_ЛПУ_${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}.xlsx`);
-});
-
-window.addEventListener('load',()=>{
-  if(typeof XLSX==='undefined'){
-    setStatus('Не удалось загрузить библиотеку для чтения Excel. Откройте инструмент при подключении к интернету (нужно только при первом запуске).',true);
-    document.getElementById('runBtn').disabled=true;
-  }
-});
+renderTiles(TOOLS);
 </script>
 </body>
 </html>
