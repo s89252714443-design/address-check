@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Автозаполнение договора</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDEFEA;
+    --panel:#FFFFFF;
+    --ink:#1C2430;
+    --ink-soft:#4B5563;
+    --line:#D7DAD1;
+    --seal:#7A2430;
+    --seal-dark:#5C1B24;
+    --gold:#8C6E33;
+    --gold-soft:#EFE6D2;
+    --success:#3F6B4A;
+    --success-bg:#E7F0E9;
+    --warn:#9A5B15;
+    --warn-bg:#F6EADA;
+    --danger:#8A2E2E;
+    --danger-bg:#F5E4E1;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 34px);
+    color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 80px;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px;}
+  header.top{
+    padding:46px 20px 30px;
+    max-width:880px;margin:0 auto;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--seal);
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:26px;height:1px;background:var(--seal);
+    display:inline-block;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:600;
+    font-size:34px;
+    margin:0 0 12px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:15.5px;
+    max-width:640px;
+    margin:0;
+  }
+  main{max-width:880px;margin:0 auto;padding-top:8px;}
+
+  section.clause{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin:26px 20px 0;
+    padding:28px 30px 30px;
+    position:relative;
+  }
+  .clause-head{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+    margin-bottom:6px;
+  }
+  .clause-num{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:20px;
+    color:var(--seal);
+  }
+  .clause-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:20px;
+    margin:0;
+  }
+  .clause-desc{
+    color:var(--ink-soft);
+    font-size:14px;
+    margin:0 0 20px;
+    max-width:620px;
+  }
+  .sigline{
+    border:none;
+    border-top:1px dotted var(--line);
+    margin:30px 0 0;
+  }
+
+  /* dropzone */
+  .drop{
+    border:1.5px dashed #B9BDAF;
+    border-radius:8px;
+    background:#FAFAF7;
+    padding:22px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.drag{
+    border-color:var(--gold);
+    background:var(--gold-soft);
+  }
+  .drop input{display:none;}
+  .drop .dz-title{font-weight:600;font-size:14.5px;}
+  .drop .dz-sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+  .filepill{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--success-bg);color:var(--success);
+    border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600;
+    margin-top:12px;
+  }
+  .filepill.remove{cursor:pointer;}
+  .filepill.remove::after{content:'✕';margin-left:6px;opacity:.6;}
+  .filelist{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+
+  /* form fields */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;}
+  label.field{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink);}
+  input[type=text], input[type=date]{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#fff;
+    color:var(--ink);
+  }
+  input[type=text]:focus, input[type=date]:focus{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+    border-color:var(--gold);
+  }
+
+  /* tag reference */
+  details.tagref{margin-top:18px;}
+  details.tagref summary{
+    cursor:pointer;font-size:13.5px;font-weight:600;color:var(--seal);
+    list-style:none;
+  }
+  details.tagref summary::-webkit-details-marker{display:none;}
+  details.tagref summary::before{content:'§ ';}
+  .tag-groups{margin-top:14px;display:flex;flex-direction:column;gap:16px;}
+  .tag-group-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:8px;
+  }
+  .tag-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    background:var(--gold-soft);
+    border:1px solid #DCCB9E;
+    color:var(--gold);
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    user-select:none;
+    position:relative;
+  }
+  .chip:hover{background:#E7DAB6;}
+  .chip.copied::after{
+    content:'скопировано';
+    position:absolute;top:-24px;left:0;
+    background:var(--ink);color:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:11px;padding:3px 7px;border-radius:4px;
+    white-space:nowrap;
+  }
+  .note{
+    background:var(--warn-bg);
+    border-left:3px solid var(--warn);
+    color:#5c3a0d;
+    font-size:13px;
+    padding:12px 14px;
+    border-radius:4px;
+    margin-top:16px;
+  }
+  .note b{color:var(--warn);}
+
+  /* action */
+  .action-row{
+    margin:30px 20px 0;
+    display:flex;
+    justify-content:center;
+  }
+  button.generate{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:17px;
+    background:var(--seal);
+    color:#fff;
+    border:none;
+    padding:16px 40px;
+    border-radius:999px;
+    cursor:pointer;
+    box-shadow:0 6px 18px -6px rgba(122,36,48,.55);
+    transition:background .15s, transform .1s;
+  }
+  button.generate:hover{background:var(--seal-dark);}
+  button.generate:active{transform:scale(0.98);}
+  button.generate:disabled{background:#B7A9A9;cursor:not-allowed;box-shadow:none;}
+
+  /* log */
+  #logbox{
+    margin:22px 20px 0;
+    background:#1C2430;
+    color:#D9DCE3;
+    border-radius:var(--radius);
+    padding:16px 20px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    max-height:220px;
+    overflow-y:auto;
+    display:none;
+  }
+  #logbox .line{padding:2px 0;opacity:.9;}
+  #logbox .line.ok{color:#8FD3A3;}
+  #logbox .line.warn{color:#E3B778;}
+  #logbox .line.err{color:#E29999;}
+
+  /* result */
+  #result{display:none;}
+  .result-banner{
+    background:var(--success-bg);
+    border:1px solid #BFDCC7;
+    border-radius:var(--radius);
+    padding:22px 26px;
+    margin:26px 20px 0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .result-banner h3{
+    font-family:'Fraunces',serif;font-size:19px;margin:0 0 4px;color:var(--success);
+  }
+  .result-banner p{margin:0;font-size:13.5px;color:var(--ink-soft);}
+  a.download-btn{
+    background:var(--success);color:#fff;text-decoration:none;
+    font-weight:600;font-size:14px;padding:11px 22px;border-radius:999px;
+    white-space:nowrap;
+  }
+  .found-table{
+    margin:18px 20px 0;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:6px 0;
+  }
+  .found-row{
+    display:grid;grid-template-columns:230px 1fr 90px;
+    gap:10px;
+    padding:10px 22px;
+    font-size:13.5px;
+    border-bottom:1px solid #F0F1EC;
+    align-items:baseline;
+  }
+  .found-row:last-child{border-bottom:none;}
+  .found-key{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-soft);}
+  .found-val{color:var(--ink);word-break:break-word;}
+  .found-val.empty{color:#B0B4A8;font-style:italic;}
+  .found-status{font-size:11px;font-weight:700;text-transform:uppercase;text-align:right;}
+  .found-status.ok{color:var(--success);}
+  .found-status.miss{color:var(--warn);}
+
+  footer.legal{
+    max-width:880px;margin:40px auto 0;padding:0 20px;
+    font-size:12px;color:var(--ink-soft);
+  }
+
+  @media (max-width:640px){
+    .grid2{grid-template-columns:1fr;}
+    h1{font-size:27px;}
+    section.clause{padding:22px 18px 24px;margin-left:14px;margin-right:14px;}
+    .found-row{grid-template-columns:1fr;gap:2px;}
+    .found-status{text-align:left;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="eyebrow">Инструмент · заполнение договоров</div>
+  <h1>Автозаполнение типового договора</h1>
+  <p class="lede">Загрузите шаблон договора с тегами, впишите номер и дату, приложите документы клиники — карточку организации и лицензию. Инструмент сам найдёт нужные реквизиты и отдаст готовый .docx в шрифтах вашего шаблона. Всё происходит в браузере — файлы никуда не отправляются.</p>
+</header>
+
+<main>
+
+  <!-- STEP 1: TEMPLATE -->
+  <section class="clause">
+    <div class="clause-head">
+      <span class="clause-num">§1</span>
+      <h2 class="clause-title">Шаблон договора</h2>
+    </div>
+    <p class="clause-desc">Загрузите .docx — типовой договор, в котором на нужных местах вписаны теги в квадратных скобках, например <code>[НАИМЕНОВАНИЕ_ПОЛНОЕ]</code>. Список всех поддерживаемых тегов — ниже, можно скопировать по клику.</p>
+
+    <div class="drop" id="dropTemplate">
+      <input type="file" id="fileTemplate" accept=".docx">
+      <div class="dz-title">Нажмите или перетащите файл шаблона (.docx)</div>
+      <div class="dz-sub">Только один файл — это ваш типовой договор с тегами</div>
+      <div id="templatePill"></div>
+    </div>
+
+    <details class="tagref">
+      <summary>Список тегов для шаблона (нажмите, чтобы раскрыть)</summary>
+      <div class="tag-groups" id="tagGroups"></div>
+      <div class="note">
+        <b>Важно для чистого результата:</b> вписывайте тег как обычный текст, тем же шрифтом и размером, что и соседний текст, без выделения цветом или маркером — при заполнении тег заменяется на значение прямо внутри форматирования этого места, поэтому итоговый текст будет выглядеть как обычный, набранный вручную. Не оставляйте пауз при наборе тега (автозамена Word иногда меняет символы) и не используйте квадратные скобки в тексте договора для иных целей.
+      </div>
+    </details>
+  </section>
+
+  <hr class="sigline">
+
+  <!-- STEP 2: CONTRACT DETAILS -->
+  <section class="clause">
+    <div class="clause-head">
+      <span class="clause-num">§2</span>
+      <h2 class="clause-title">Реквизиты договора</h2>
+    </div>
+    <p class="clause-desc">Эти данные заполняются вручную — их нет в документах клиники.</p>
+    <div class="grid2">
+      <div>
+        <label class="field" for="inpNumber">Номер договора</label>
+        <input type="text" id="inpNumber" placeholder="Например, 24-МД">
+      </div>
+      <div>
+        <label class="field" for="inpCity">Город заключения договора</label>
+        <input type="text" id="inpCity" placeholder="Например, Москва">
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:16px;">
+      <div>
+        <label class="field" for="inpDate">Дата, от которой действует договор</label>
+        <input type="date" id="inpDate">
+        <div class="dz-sub" style="margin-top:6px;">Дата окончания срока действия (дата + 365 дней) считается автоматически — используйте тег [ДАТА_ОКОНЧАНИЯ]</div>
+      </div>
+    </div>
+
+    <div style="margin-top:28px; padding-top:20px; border-top:1px dotted var(--line);">
+      <div class="tag-group-label" style="margin-bottom:14px;">Контактные лица Заказчика (свои реквизиты, вписываются вручную)</div>
+
+      <p class="clause-desc" style="margin-bottom:14px;">Сопровождение договора</p>
+      <div class="grid2">
+        <div><label class="field" for="inpFioSoprovozhdenie">ФИО</label><input type="text" id="inpFioSoprovozhdenie"></div>
+        <div><label class="field" for="inpTelSoprovozhdenie">Телефон</label><input type="text" id="inpTelSoprovozhdenie"></div>
+      </div>
+      <div class="grid2" style="margin-top:12px;">
+        <div><label class="field" for="inpMailSoprovozhdenie">Почта</label><input type="text" id="inpMailSoprovozhdenie"></div>
+      </div>
+
+      <p class="clause-desc" style="margin:20px 0 14px;">Взаиморасчёты (тот же контакт используется и для технической/медико-экономической экспертизы)</p>
+      <div class="grid2">
+        <div><label class="field" for="inpFioVzaimo">ФИО</label><input type="text" id="inpFioVzaimo"></div>
+        <div><label class="field" for="inpTelVzaimo">Телефон</label><input type="text" id="inpTelVzaimo"></div>
+      </div>
+      <div class="grid2" style="margin-top:12px;">
+        <div><label class="field" for="inpMailVzaimo">Почта</label><input type="text" id="inpMailVzaimo"></div>
+      </div>
+
+      <p class="clause-desc" style="margin:20px 0 14px;">Запись пациентов</p>
+      <div class="grid2">
+        <div><label class="field" for="inpTelZapis">Телефон</label><input type="text" id="inpTelZapis"></div>
+        <div><label class="field" for="inpMailZapis">Почта</label><input type="text" id="inpMailZapis"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="sigline">
+
+  <!-- STEP 3: CLINIC DOCS -->
+  <section class="clause">
+    <div class="clause-head">
+      <span class="clause-num">§3</span>
+      <h2 class="clause-title">Документы клиники</h2>
+    </div>
+    <p class="clause-desc">Карточка организации, лицензия и т.п. — в любом виде: Word, PDF, фото или сканы. Можно загрузить сразу несколько файлов. Инструмент сам прочитает текст (включая распознавание сканов) и найдёт нужные реквизиты — независимо от того, где именно в документе они расположены.</p>
+
+    <div class="drop" id="dropClinic">
+      <input type="file" id="fileClinic" accept=".docx,.doc,.pdf,.jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff" multiple>
+      <div class="dz-title">Нажмите или перетащите файлы клиники</div>
+      <div class="dz-sub">.docx, .pdf, .jpg, .png и другие — можно несколько сразу</div>
+    </div>
+    <div class="filelist" id="clinicFileList"></div>
+    <div class="note">Сканы и фото распознаются прямо в браузере (библиотека Tesseract), это может занять до пары минут на файл — данные документа при этом никуда не передаются, скачивается только сам движок распознавания.</div>
+  </section>
+
+  <div class="action-row">
+    <button class="generate" id="btnGenerate">Сформировать договор</button>
+  </div>
+
+  <div id="logbox"></div>
+
+  <div id="result">
+    <div class="result-banner">
+      <div>
+        <h3>Договор сформирован</h3>
+        <p>Проверьте документ перед подписанием — автоматический поиск данных не заменяет вычитку.</p>
+      </div>
+      <a class="download-btn" id="downloadLink" download="">Скачать .docx</a>
+    </div>
+    <div class="found-table" id="foundTable"></div>
+  </div>
+
+</main>
+
+<footer class="legal">
+  Инструмент работает полностью локально в вашем браузере: файлы шаблона и документы клиники не отправляются ни на один сервер. Библиотеки для чтения docx/pdf, распознавания текста и сборки итогового файла подключаются с публичных CDN.
+</footer>
+
+<!-- LIBRARIES (CDN only, no build step) -->
+<script src="https://unpkg.com/pizzip@3.2.0/dist/pizzip.js"></script>
+<script src="https://unpkg.com/docxtemplater@3.68.5/build/docxtemplater.js"></script>
+<script src="https://unpkg.com/file-saver@1.3.8/FileSaver.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.11.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- CONFIG: fixed tag list ----------
+  var TAGS = [
+    {key:"НОМЕР_ДОГОВОРА", group:"Договор (вручную)", label:"Номер договора"},
+    {key:"ГОРОД", group:"Договор (вручную)", label:"Город заключения договора"},
+    {key:"ДАТА_ДОГОВОРА", group:"Договор (вручную)", label:"Дата словами: «01» июля 2026 г."},
+    {key:"ДАТА_ДОГОВОРА_ЦИФРАМИ", group:"Договор (вручную)", label:"Дата цифрами: 01.07.2026"},
+    {key:"ДАТА_ОКОНЧАНИЯ", group:"Договор (вручную)", label:"Дата окончания (дата договора + 365 дней), словами"},
+    {key:"ДАТА_ОКОНЧАНИЯ_ЦИФРАМИ", group:"Договор (вручную)", label:"Дата окончания, цифрами"},
+
+    {key:"ФИО_СОПРОВОЖДЕНИЕ", group:"Контактные лица (вручную)", label:"ФИО — сопровождение договора"},
+    {key:"ТЕЛЕФОН_СОПРОВОЖДЕНИЕ", group:"Контактные лица (вручную)", label:"Телефон — сопровождение договора"},
+    {key:"ПОЧТА_СОПРОВОЖДЕНИЕ", group:"Контактные лица (вручную)", label:"Почта — сопровождение договора"},
+    {key:"ФИО_ВЗАИМОРАСЧЕТЫ", group:"Контактные лица (вручную)", label:"ФИО — взаиморасчёты (и мед. экспертиза)"},
+    {key:"ТЕЛЕФОН_ВЗАИМОРАСЧЕТЫ", group:"Контактные лица (вручную)", label:"Телефон — взаиморасчёты (и мед. экспертиза)"},
+    {key:"ПОЧТА_ВЗАИМОРАСЧЕТЫ", group:"Контактные лица (вручную)", label:"Почта — взаиморасчёты (и мед. экспертиза)"},
+    {key:"ТЕЛЕФОН_ЗАПИСЬ", group:"Контактные лица (вручную)", label:"Телефон — запись пациентов"},
+    {key:"ПОЧТА_ЗАПИСЬ", group:"Контактные лица (вручную)", label:"Почта — запись пациентов"},
+
+    {key:"НАИМЕНОВАНИЕ_ПОЛНОЕ", group:"Контрагент", label:"Полное наименование"},
+    {key:"НАИМЕНОВАНИЕ_КРАТКОЕ", group:"Контрагент", label:"Краткое наименование"},
+    {key:"ИНН", group:"Контрагент"},
+    {key:"КПП", group:"Контрагент"},
+    {key:"ОГРН", group:"Контрагент"},
+    {key:"ОКПО", group:"Контрагент"},
+    {key:"ТЕЛЕФОН", group:"Контрагент", label:"Телефон/факс"},
+    {key:"EMAIL", group:"Контрагент", label:"Электронная почта"},
+    {key:"ЮР_АДРЕС", group:"Контрагент", label:"Юридический адрес"},
+    {key:"ФАКТ_АДРЕС", group:"Контрагент", label:"Фактический адрес"},
+    {key:"БАНК", group:"Контрагент", label:"Наименование банка"},
+    {key:"РАСЧЕТНЫЙ_СЧЕТ", group:"Контрагент"},
+    {key:"КОРР_СЧЕТ", group:"Контрагент", label:"Корр. счёт"},
+    {key:"БИК", group:"Контрагент"},
+
+    {key:"ФИО_ПОДПИСАНТА", group:"Подписант"},
+    {key:"ДОЛЖНОСТЬ_ПОДПИСАНТА", group:"Подписант"},
+    {key:"ОСНОВАНИЕ_ПОДПИСАНТА", group:"Подписант", label:"Основание (Устав / Доверенность №… от …)"},
+
+    {key:"НОМЕР_ЛИЦЕНЗИИ", group:"Лицензия"},
+    {key:"ДАТА_ЛИЦЕНЗИИ", group:"Лицензия", label:"Дата выдачи"},
+    {key:"ЛИЦЕНЗИЯ_ОРГАН", group:"Лицензия", label:"Кем выдана"},
+    {key:"ЛИЦЕНЗИЯ_ВИД_ДЕЯТЕЛЬНОСТИ", group:"Лицензия", label:"Вид деятельности"}
+  ];
+
+  var MONTHS_GEN = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+
+  // ---------- STATE ----------
+  var templateFile = null;
+  var clinicFiles = [];
+
+  // ---------- UI: render tag reference ----------
+  var groupsOrder = [];
+  var groupsMap = {};
+  TAGS.forEach(function(t){
+    if(!groupsMap[t.group]){ groupsMap[t.group]=[]; groupsOrder.push(t.group); }
+    groupsMap[t.group].push(t);
+  });
+  var tagGroupsEl = document.getElementById("tagGroups");
+  groupsOrder.forEach(function(g){
+    var wrap = document.createElement("div");
+    var lbl = document.createElement("div");
+    lbl.className = "tag-group-label";
+    lbl.textContent = g;
+    wrap.appendChild(lbl);
+    var chips = document.createElement("div");
+    chips.className = "tag-chips";
+    groupsMap[g].forEach(function(t){
+      var chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = "[" + t.key + "]";
+      chip.title = t.label || t.key;
+      chip.addEventListener("click", function(){
+        copyToClipboard("[" + t.key + "]");
+        chip.classList.add("copied");
+        setTimeout(function(){ chip.classList.remove("copied"); }, 1200);
+      });
+      chips.appendChild(chip);
+    });
+    wrap.appendChild(chips);
+    tagGroupsEl.appendChild(wrap);
+  });
+
+  function copyToClipboard(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  // ---------- UI: dropzones ----------
+  function setupDrop(dropId, inputId, onFiles){
+    var drop = document.getElementById(dropId);
+    var input = document.getElementById(inputId);
+    drop.addEventListener("click", function(){ input.click(); });
+    input.addEventListener("change", function(){ onFiles(Array.prototype.slice.call(input.files)); });
+    ["dragenter","dragover"].forEach(function(ev){
+      drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("drag"); });
+    });
+    ["dragleave","drop"].forEach(function(ev){
+      drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("drag"); });
+    });
+    drop.addEventListener("drop", function(e){
+      var files = Array.prototype.slice.call(e.dataTransfer.files);
+      onFiles(files);
+    });
+  }
+
+  setupDrop("dropTemplate", "fileTemplate", function(files){
+    if(!files.length) return;
+    templateFile = files[0];
+    document.getElementById("templatePill").innerHTML = "";
+    var pill = document.createElement("span");
+    pill.className = "filepill remove";
+    pill.textContent = templateFile.name;
+    pill.addEventListener("click", function(e){
+      e.stopPropagation();
+      templateFile = null;
+      document.getElementById("templatePill").innerHTML = "";
+    });
+    document.getElementById("templatePill").appendChild(pill);
+  });
+
+  setupDrop("dropClinic", "fileClinic", function(files){
+    files.forEach(function(f){ clinicFiles.push(f); });
+    renderClinicList();
+  });
+
+  function renderClinicList(){
+    var list = document.getElementById("clinicFileList");
+    list.innerHTML = "";
+    clinicFiles.forEach(function(f, idx){
+      var pill = document.createElement("span");
+      pill.className = "filepill remove";
+      pill.textContent = f.name;
+      pill.addEventListener("click", function(){
+        clinicFiles.splice(idx,1);
+        renderClinicList();
+      });
+      list.appendChild(pill);
+    });
+  }
+
+  // ---------- LOG ----------
+  var logbox = document.getElementById("logbox");
+  function log(msg, type){
+    logbox.style.display = "block";
+    var line = document.createElement("div");
+    line.className = "line" + (type ? " "+type : "");
+    line.textContent = msg;
+    logbox.appendChild(line);
+    logbox.scrollTop = logbox.scrollHeight;
+  }
+
+  // ---------- DATE FORMATTING ----------
+  function pad2(n){ return (n<10 ? "0" : "") + n; }
+
+  function formatOneDate(y, m, d){
+    // y=full year, m=1..12, d=day
+    var digits = pad2(d) + "." + pad2(m) + "." + y;
+    var words = "«" + pad2(d) + "» " + MONTHS_GEN[m-1] + " " + y + " г.";
+    return {words:words, digits:digits};
+  }
+
+  function formatDates(isoDate){
+    if(!isoDate) return {startWords:"", startDigits:"", endWords:"", endDigits:""};
+    var parts = isoDate.split("-");
+    var y = parseInt(parts[0],10), m = parseInt(parts[1],10), d = parseInt(parts[2],10);
+    var start = formatOneDate(y, m, d);
+
+    // end date = start date + 365 days, computed via UTC to avoid DST/timezone drift
+    var startUTC = Date.UTC(y, m-1, d, 12, 0, 0);
+    var endUTC = new Date(startUTC + 365*24*60*60*1000);
+    var end = formatOneDate(endUTC.getUTCFullYear(), endUTC.getUTCMonth()+1, endUTC.getUTCDate());
+
+    return {startWords:start.words, startDigits:start.digits, endWords:end.words, endDigits:end.digits};
+  }
+
+  // ---------- TEXT EXTRACTION ----------
+  async function extractTextFromFile(file, ocrWorker){
+    var name = file.name.toLowerCase();
+    var ext = name.split(".").pop();
+    try{
+      if(ext === "docx" || ext === "doc"){
+        log("Читаю " + file.name + " (Word)…");
+        var buf = await file.arrayBuffer();
+        var res = await mammoth.extractRawText({arrayBuffer: buf});
+        return res.value || "";
+      }
+      if(ext === "pdf"){
+        log("Читаю " + file.name + " (PDF)…");
+        var buf2 = await file.arrayBuffer();
+        var pdf = await pdfjsLib.getDocument({data: buf2}).promise;
+        var textParts = [];
+        for(var i=1; i<=pdf.numPages; i++){
+          var page = await pdf.getPage(i);
+          var content = await page.getTextContent();
+          var pageText = content.items.map(function(it){ return it.str; }).join(" ");
+          textParts.push(pageText);
+        }
+        var combined = textParts.join("\n");
+        if(combined.replace(/\s+/g,"").length < 60 * pdf.numPages / 3){
+          log(file.name + ": текстового слоя мало похоже на скан — распознаю картинки (OCR)…", "warn");
+          var ocrParts = [];
+          for(var p=1; p<=pdf.numPages; p++){
+            log("OCR: " + file.name + ", страница " + p + " из " + pdf.numPages + "…");
+            var pg = await pdf.getPage(p);
+            var viewport = pg.getViewport({scale: 2});
+            var canvas = document.createElement("canvas");
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            var ctx = canvas.getContext("2d");
+            await pg.render({canvasContext: ctx, viewport: viewport}).promise;
+            var ocrRes = await ocrWorker.recognize(canvas);
+            ocrParts.push(ocrRes.data.text || "");
+          }
+          return ocrParts.join("\n");
+        }
+        return combined;
+      }
+      if(["jpg","jpeg","png","webp","bmp","tif","tiff"].indexOf(ext) !== -1){
+        log("OCR: распознаю " + file.name + "…");
+        var ocrRes2 = await ocrWorker.recognize(file);
+        return ocrRes2.data.text || "";
+      }
+      log("Формат файла " + file.name + " не поддерживается — пропускаю.", "warn");
+      return "";
+    } catch(err){
+      log("Не удалось прочитать " + file.name + ": " + err.message, "err");
+      return "";
+    }
+  }
+
+  // ---------- HEURISTIC FIELD EXTRACTION ----------
+  function grab(re, text){
+    var m = text.match(re);
+    if(!m) return "";
+    return (m[1] || "").trim().replace(/\s+/g," ").replace(/[,;]$/,"");
+  }
+
+  function extractFields(corpus){
+    var out = {};
+
+    out.ИНН = grab(/ИНН[\s:№]*?(\d{10}|\d{12})/i, corpus);
+    out.КПП = grab(/КПП[\s:№]*?(\d{9})/i, corpus);
+    out.ОГРН = grab(/ОГРН(?:ИП)?[\s:№]*?(\d{13}|\d{15})/i, corpus);
+    out.ОКПО = grab(/ОКПО[\s:№]*?(\d{8})/i, corpus);
+    out.ТЕЛЕФОН = grab(/(?:тел\.?\s*\/?\s*факс|телефон|тел\.)[\s:]*([+\d][\d\s\-\(\)]{5,20})/i, corpus);
+    out.EMAIL = grab(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/, corpus);
+    out.БИК = grab(/БИК[\s:№]*?(\d{9})/i, corpus);
+    out.РАСЧЕТНЫЙ_СЧЕТ = grab(/(?:Р\/С|РАСЧ[ЕЁ]ТНЫЙ\s*СЧ[ЕЁ]Т)[\s:№]*?(\d{20})/i, corpus);
+    out.КОРР_СЧЕТ = grab(/(?:К\/С|КОРР(?:ЕСПОНДЕНТСКИЙ)?\.?\s*СЧ[ЕЁ]Т)[\s:№]*?(\d{20})/i, corpus);
+    out.БАНК = grab(/(?:^|\n)\s*БАНК[\s:]+([^\n,;]{3,90})/i, corpus);
+
+    var orgMatch = corpus.match(/(ООО|ОАО|ЗАО|АО|ПАО|НАО|ИП|АНО|ГБУЗ|ФГБУЗ|МБУЗ|ЧУЗ|НУЗ|ГАУЗ|ОГАУЗ|ФГУП|МУП|НКО)\s*[«"”]([^»"”]{2,150})[»"”]/i);
+    if(orgMatch){
+      out.НАИМЕНОВАНИЕ_ПОЛНОЕ = (orgMatch[1] + ' "' + orgMatch[2].trim() + '"');
+    } else {
+      out.НАИМЕНОВАНИЕ_ПОЛНОЕ = "";
+    }
+    var shortMatch = corpus.match(/далее[\s—\-–]*[«"”]([^»"”]{2,60})[»"”]/i);
+    out.НАИМЕНОВАНИЕ_КРАТКОЕ = shortMatch ? shortMatch[1].trim() : out.НАИМЕНОВАНИЕ_ПОЛНОЕ;
+
+    out.ЮР_АДРЕС = grab(/(?:Юридический адрес|Место нахождения)[\s:]*([^\n]{5,200})/i, corpus);
+    out.ФАКТ_АДРЕС = grab(/(?:Фактический адрес|Адрес места осуществления деятельности|Почтовый адрес)[\s:]*([^\n]{5,200})/i, corpus);
+
+    var signerMatch = corpus.match(/(?:в лице|Руководитель|Подписант)[^\n]{0,60}?(Генеральн\w*\s+директор\w*|Директор\w*|Главн\w*\s+врач\w*|Президент\w*|Управляющ\w*)[^\n]{0,15}?([А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)?)/i);
+    if(signerMatch){
+      out.ДОЛЖНОСТЬ_ПОДПИСАНТА = signerMatch[1].trim();
+      out.ФИО_ПОДПИСАНТА = signerMatch[2].trim();
+    } else {
+      out.ДОЛЖНОСТЬ_ПОДПИСАНТА = "";
+      out.ФИО_ПОДПИСАНТА = "";
+    }
+    out.ОСНОВАНИЕ_ПОДПИСАНТА = grab(/действ\w*\s+на\s+основании\s+([^\n,.;]{3,100})/i, corpus);
+
+    out.НОМЕР_ЛИЦЕНЗИИ = grab(/Лицензи[яи][^\n]{0,60}?№\s*([A-Za-zА-Яа-я0-9\-\/.]{3,40})/i, corpus);
+    out.ДАТА_ЛИЦЕНЗИИ = grab(/Лицензи[яи][^\n]{0,150}?от\s+((?:«?\d{1,2}»?\s+[а-яё]+\s+\d{4}\s*г?\.?)|(?:\d{1,2}\.\d{1,2}\.\d{2,4}))/i, corpus);
+    out.ЛИЦЕНЗИЯ_ОРГАН = grab(/выдан\w*\s+([^\n,.;]{3,150})/i, corpus);
+    out.ЛИЦЕНЗИЯ_ВИД_ДЕЯТЕЛЬНОСТИ = grab(/(?:на осуществление|вид[а]?\s+деятельности)[\s:]*([^\n]{3,200})/i, corpus);
+
+    return out;
+  }
+
+  // ---------- DOCX GENERATION ----------
+  function sanitizeFilename(s){
+    return (s || "без_номера").replace(/[\\\/:*?"<>|]/g, "_");
+  }
+
+  async function generateDocx(templateArrayBuffer, data){
+    var zip = new PizZip(templateArrayBuffer);
+    var doc = new window.docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      delimiters: {start: "[", end: "]"},
+      nullGetter: function(){ return ""; }
+    });
+    doc.render(data);
+    return doc.getZip().generate({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+  }
+
+  // ---------- MAIN ACTION ----------
+  document.getElementById("btnGenerate").addEventListener("click", async function(){
+    var btn = this;
+    document.getElementById("result").style.display = "none";
+    logbox.innerHTML = ""; logbox.style.display = "none";
+
+    if(!templateFile){
+      alert("Сначала загрузите шаблон договора (§1).");
+      return;
+    }
+    var numberVal = document.getElementById("inpNumber").value.trim();
+    var cityVal = document.getElementById("inpCity").value.trim();
+    var dateVal = document.getElementById("inpDate").value;
+    if(!numberVal){ alert("Укажите номер договора (§2)."); return; }
+    if(!cityVal){ alert("Укажите город заключения договора (§2)."); return; }
+    if(!dateVal){ alert("Укажите дату договора (§2)."); return; }
+    if(!clinicFiles.length){ alert("Загрузите хотя бы один документ клиники (§3)."); return; }
+
+    btn.disabled = true;
+    btn.textContent = "Формирую…";
+
+    try{
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js";
+
+      log("Готовлю распознавание текста (OCR)…");
+      var ocrWorker = await Tesseract.createWorker("rus+eng");
+
+      var corpusParts = [];
+      for(var i=0; i<clinicFiles.length; i++){
+        var t = await extractTextFromFile(clinicFiles[i], ocrWorker);
+        corpusParts.push("--- " + clinicFiles[i].name + " ---\n" + t);
+      }
+      await ocrWorker.terminate();
+
+      var corpus = corpusParts.join("\n\n");
+      log("Ищу реквизиты в тексте документов…");
+      var found = extractFields(corpus);
+
+      var dates = formatDates(dateVal);
+      var data = {
+        НОМЕР_ДОГОВОРА: numberVal,
+        ГОРОД: cityVal,
+        ДАТА_ДОГОВОРА: dates.startWords,
+        ДАТА_ДОГОВОРА_ЦИФРАМИ: dates.startDigits,
+        ДАТА_ОКОНЧАНИЯ: dates.endWords,
+        ДАТА_ОКОНЧАНИЯ_ЦИФРАМИ: dates.endDigits,
+        ФИО_СОПРОВОЖДЕНИЕ: document.getElementById("inpFioSoprovozhdenie").value.trim(),
+        ТЕЛЕФОН_СОПРОВОЖДЕНИЕ: document.getElementById("inpTelSoprovozhdenie").value.trim(),
+        ПОЧТА_СОПРОВОЖДЕНИЕ: document.getElementById("inpMailSoprovozhdenie").value.trim(),
+        ФИО_ВЗАИМОРАСЧЕТЫ: document.getElementById("inpFioVzaimo").value.trim(),
+        ТЕЛЕФОН_ВЗАИМОРАСЧЕТЫ: document.getElementById("inpTelVzaimo").value.trim(),
+        ПОЧТА_ВЗАИМОРАСЧЕТЫ: document.getElementById("inpMailVzaimo").value.trim(),
+        ТЕЛЕФОН_ЗАПИСЬ: document.getElementById("inpTelZapis").value.trim(),
+        ПОЧТА_ЗАПИСЬ: document.getElementById("inpMailZapis").value.trim()
+      };
+      TAGS.forEach(function(t){
+        if(data[t.key] === undefined){
+          data[t.key] = found[t.key] || "";
+        }
+      });
+
+      log("Собираю итоговый документ…", "ok");
+      var templateBuf = await templateFile.arrayBuffer();
+      var blob;
+      try{
+        blob = await generateDocx(templateBuf, data);
+      } catch(genErr){
+        var details = "";
+        if(genErr.properties && genErr.properties.errors){
+          details = genErr.properties.errors.map(function(e){ return e.properties && e.properties.explanation ? e.properties.explanation : e.message; }).join("; ");
+        }
+        log("Ошибка при сборке документа: " + (details || genErr.message), "err");
+        alert("Не удалось собрать документ. Проверьте, что теги в шаблоне написаны точно как в списке (квадратные скобки, без опечаток и разрывов).\n" + (details || genErr.message));
+        btn.disabled = false; btn.textContent = "Сформировать договор";
+        return;
+      }
+
+      var filename = "Договор_№" + sanitizeFilename(numberVal) + ".docx";
+      var url = URL.createObjectURL(blob);
+      var link = document.getElementById("downloadLink");
+      link.href = url;
+      link.setAttribute("download", filename);
+
+      renderFoundTable(data, found);
+      document.getElementById("result").style.display = "block";
+      log("Готово.", "ok");
+      document.getElementById("result").scrollIntoView({behavior:"smooth", block:"start"});
+
+    } catch(err){
+      log("Непредвиденная ошибка: " + err.message, "err");
+      alert("Что-то пошло не так: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Сформировать договор";
+    }
+  });
+
+  function renderFoundTable(data, found){
+    var box = document.getElementById("foundTable");
+    box.innerHTML = "";
+    var manualKeys = {НОМЕР_ДОГОВОРА:1, ГОРОД:1, ДАТА_ДОГОВОРА:1, ДАТА_ДОГОВОРА_ЦИФРАМИ:1, ДАТА_ОКОНЧАНИЯ:1, ДАТА_ОКОНЧАНИЯ_ЦИФРАМИ:1,
+      ФИО_СОПРОВОЖДЕНИЕ:1, ТЕЛЕФОН_СОПРОВОЖДЕНИЕ:1, ПОЧТА_СОПРОВОЖДЕНИЕ:1,
+      ФИО_ВЗАИМОРАСЧЕТЫ:1, ТЕЛЕФОН_ВЗАИМОРАСЧЕТЫ:1, ПОЧТА_ВЗАИМОРАСЧЕТЫ:1,
+      ТЕЛЕФОН_ЗАПИСЬ:1, ПОЧТА_ЗАПИСЬ:1};
+    TAGS.forEach(function(t){
+      var row = document.createElement("div");
+      row.className = "found-row";
+      var k = document.createElement("div");
+      k.className = "found-key";
+      k.textContent = "[" + t.key + "]";
+      var v = document.createElement("div");
+      var val = data[t.key] || "";
+      v.className = "found-val" + (val ? "" : " empty");
+      v.textContent = val || "не найдено";
+      var s = document.createElement("div");
+      s.className = "found-status " + (manualKeys[t.key] ? "ok" : (val ? "ok" : "miss"));
+      s.textContent = manualKeys[t.key] ? "вручную" : (val ? "найдено" : "нет данных");
+      row.appendChild(k); row.appendChild(v); row.appendChild(s);
+      box.appendChild(row);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
